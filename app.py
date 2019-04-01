@@ -10,6 +10,7 @@ import numpy as np
 from keras.applications.imagenet_utils import preprocess_input, decode_predictions
 from keras.models import load_model
 from keras.preprocessing import image
+from keras.models import model_from_json
 
 # Flask utils
 from flask import Flask, redirect, url_for, request, render_template
@@ -20,22 +21,21 @@ from gevent.pywsgi import WSGIServer
 app = Flask(__name__)
 
 # Model saved with Keras model.save()
-MODEL_PATH = 'models/your_model.h5'
+MODEL_ARCH = 'models/your_model.json'
+MODEL_WEIGHTS = 'models/your_model.h5'
 
-# Load your trained model
-# model = load_model(MODEL_PATH)
-# model._make_predict_function()          # Necessary
-# print('Model loaded. Start serving...')
+# Model reconstruction from JSON file
+with open(MODEL_ARCH, 'r') as f:
+    model = model_from_json(f.read())
 
-# You can also use pretrained model from Keras
-# Check https://keras.io/applications/
-from keras.applications.resnet50 import ResNet50
-model = ResNet50(weights='imagenet')
+# Load weights into the new model
+model.load_weights(MODEL_WEIGHTS)
+
 print('Model loaded. Check http://127.0.0.1:5000/')
 
 
 def model_predict(img_path, model):
-    img = image.load_img(img_path, target_size=(224, 224))
+    img = image.load_img(img_path, target_size=(424, 424))
 
     # Preprocessing the image
     x = image.img_to_array(img)
@@ -70,10 +70,13 @@ def upload():
 
         # Make prediction
         preds = model_predict(file_path, model)
-
+        print("Preds: ")
+        print(preds)
         # Process your result for human
-        # pred_class = preds.argmax(axis=-1)            # Simple argmax
-        pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
+        labels = ['Spiral', 'Elliptical', 'Irregular', 'Other']
+        pred_class = preds.argmax(axis=-1)            # Simple argmax
+        return sorted(labels)[pred_class[0]]
+        # pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
         result = str(pred_class[0][0][1])               # Convert to string
         return result
     return None
