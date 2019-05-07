@@ -7,11 +7,12 @@ import re
 import numpy as np
 
 # Keras
-from keras.applications.imagenet_utils import preprocess_input, decode_predictions
+from keras.applications.imagenet_utils import decode_predictions
 from keras.models import load_model
 from keras.preprocessing import image
 from keras.models import model_from_json
 from keras.applications import inception_v3
+from keras.applications.inception_v3 import preprocess_input
 from keras.models import Sequential
 from keras_preprocessing.image import ImageDataGenerator as IDG
 from keras.layers import Dense, Flatten, Dropout
@@ -69,12 +70,13 @@ def model_predict(img_path, model):
 
     # Preprocessing the image
     x = image.img_to_array(img)
+
     # x = np.true_divide(x, 255)
-    x = np.expand_dims(x, axis=0)
+    # x = np.expand_dims(x, axis=0)
 
     # Be careful how your trained model deals with the input
     # otherwise, it won't make correct prediction!
-    x = preprocess_input(x, mode='caffe')
+    x = preprocess_input(x)
 
     preds = model.predict(x)
     return preds
@@ -103,11 +105,13 @@ def upload():
         print("Preds: ")
         print(preds)
         # Process your result for human
-        labels = ['Spiral', 'Elliptical', 'Irregular', 'Other']
+        labels = ['Elliptical', 'Irregular', 'Spiral']
         pred_class = preds.argmax(axis=-1)            # Simple argmax
-        return sorted(labels)[pred_class[0]]
+        confidence = preds[0, pred_class[0]]
+        return (sorted(labels)[pred_class[0]] + ' Confidence: ' + str(confidence))
         # pred_class = decode_predictions(preds, top=1)   # ImageNet Decode
-        result = str(pred_class[0][0][1])               # Convert to string
+        result = ''.join([str(pred_class[0][0][1]), ' Confidence: ', str(confidence)])
+        print(result)             # Convert to string
         return result
     return None
 
